@@ -1,4 +1,4 @@
-# Google BigQuery wrapper 
+# Google BigQuery java wrapper 
 
 ## Simplify access to BigQuery with power of Apache velocity templated SQL and paginated results.
 
