@@ -33,7 +33,7 @@ Use it in a next simple steps.
 
 ### Iterate paginated results (lazy loading)
 
-    for (BqSelect.Row row : q) {
+    for (BqSelect.Row row : rows) {
             .....
         }
 
