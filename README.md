@@ -10,7 +10,7 @@ Use it in a next simple steps.
 SELECT * FROM [${DATASET}.$table] $filter
 #end
 ```
-* Create context object to connect BigQuery with specified credentials
+* Create context object to connect BigQuery with specified credentials and SQL templates 
 ```
 BqContext context = new BqContext.Builder()
             .withProjectId("my-big-query-project")
