@@ -25,7 +25,7 @@ Use it in a next simple steps.
     
 ### Build template based query
 
-    BqSelect rows = bq.select("alltabledata", "mytable")
+    BqSelect rows = context.select("alltabledata", "mytable")
                 .useCache(true)
                 .withPageSize(1000)
                 .withPriority("INTERACTIVE")
