@@ -1,0 +1,8 @@
+#macro(selectPerson $time $name )
+    select * from [${DATASET}.unit] where time>$time and name='$esc.sql($name)'
+#end
+
+
+#macro(alltabledata $table)
+SELECT * FROM [${DATASET}.$table]
+#end

@@ -1,0 +1,6 @@
+src/test/resources/*.p12
+.gradle
+local.properties
+build
+.idea
+*.iml

@@ -10,7 +10,7 @@ Use it in a next simple steps.
     SELECT * FROM [${DATASET}.$table]
     #end
 
-### Create context object
+### Create context object to connect BigQuery with specified credentials
 
     BqContext context = new BqContext.Builder()
                 .withProjectId("my-big-query-project")
@@ -19,7 +19,7 @@ Use it in a next simple steps.
                 .withTemplateLibrary("sql.vm")
                 .build();
 
-### Populate context with some tenplate variables
+### Populate context with some template variables
 
     context.put("DATASET", "v_0bd737781f004ffe9b7f6ebe5bc3991d");
     
