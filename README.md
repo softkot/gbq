@@ -1,9 +1,8 @@
-# gbq
-Google BigQuery wrapper 
+# Google BigQuery wrapper 
 
-Simplify access to BigQuery with power of Apache velocity templated SQL and paginated results.
+## Simplify access to BigQuery with power of Apache velocity templated SQL and paginated results.
 
-Use it in a three simple steps.
+Use it in a next simple steps.
 
 ### Create SQL template resource file (sql.vm)
 
