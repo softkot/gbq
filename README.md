@@ -21,7 +21,7 @@ BqContext context = new BqContext.Builder()
 ```
 * Populate context with some global template variables
 ```
-context.put("DATASET", "v_0bd737781f004ffe9b7f6ebe5bc3991d");
+context.with("DATASET", "v_0bd737781f004ffe9b7f6ebe5bc3991d");
 ```    
 * Build template based query with local template variables and macro parameters
 ```
@@ -29,7 +29,7 @@ BqSelect rows = context.select("alltabledata", "mytable")
             .useCache(true)
             .withPageSize(1000)
             .withPriority("INTERACTIVE")
-            .put("filter","where myvalue > 10")
+            .with("filter","where myvalue > 10")
             .build();
 ```
 * Iterate paginated results (lazy loading)

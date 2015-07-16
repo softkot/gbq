@@ -196,7 +196,7 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
             return this;
         }
 
-        public Builder put(String key, Object value) {
+        public Builder with(String key, Object value) {
             localvc.put(key, value);
             return this;
         }

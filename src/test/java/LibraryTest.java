@@ -18,7 +18,8 @@ public class LibraryTest {
                 .withTemplateLibrary("tests.vm")
                 .build();
 
-        bq.put("DATASET", "v_0bd737781f004ffe9b7f6ebe5bc3991d");
+        bq.with("DATASET", "v_0bd737781f004ffe9b7f6ebe5bc3991d");
+
         BqSelect q = bq.select("alltabledata", "refs")
                 .useCache(true)
                 .withPageSize(1000)

@@ -81,6 +81,7 @@ public class BqContext {
         private String serviceAccount;
         private URL keyURI;
         HashSet<String> libs = new HashSet<String>();
+        final VelocityContext vc=new VelocityContext();
 
         public Builder() {
         }
@@ -103,6 +104,10 @@ public class BqContext {
         public Builder withTemplateLibrary(String... libs) {
             this.libs.addAll(Arrays.asList(libs));
             return this;
+        }
+
+        public void with(String key, Object value) {
+            vc.put(key, value);
         }
 
         public BqContext build() throws GeneralSecurityException, IOException, URISyntaxException {
@@ -139,7 +144,7 @@ public class BqContext {
         for (String lib : builder.libs) {
             ve.getTemplate(lib);
         }
-        vc = new VelocityContext();
+        vc = new VelocityContext(builder.vc);
         vc.put("esc", new EscapeTool());
         vc.put("date", new DateTool());
         vc.put("math", new MathTool());
@@ -163,11 +168,11 @@ public class BqContext {
                 .withParams(params);
     }
 
-    public void put(String key, Object value) {
+    public void with(String key, Object value) {
         vc.put(key, value);
     }
 
-    public void remove(String key) {
+    public void without(String key) {
         vc.remove(key);
     }
 
