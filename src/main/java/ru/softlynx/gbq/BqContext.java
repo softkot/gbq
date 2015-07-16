@@ -26,8 +26,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class BqContext {
-    private final VelocityContext vc;
-    private final VelocityEngine ve;
+    final VelocityContext vc;
+    final VelocityEngine ve;
 
     final private String projectId;
     final private Bigquery bq;
@@ -158,18 +158,9 @@ public class BqContext {
     }
 
     public BqSelect.Builder select(String queryName, Object... params) {
-        StringWriter sw = new StringWriter();
-        vc.put(queryName, params);
-        String[] paramNames = null;
-        if (params != null) {
-            paramNames = new String[params.length];
-            for (int i = 0; i < params.length; i++) {
-                paramNames[i] = "${" + queryName + "[" + i + "]}";
-            }
-        }
-        ve.invokeVelocimacro(queryName, queryName, paramNames, vc, sw);
-        vc.remove(queryName);
-        return new BqSelect.Builder(this, sw.toString());
+        return new BqSelect.Builder(this)
+                .withTemplateMacro(queryName)
+                .withParams(params);
     }
 
     public void put(String key, Object value) {

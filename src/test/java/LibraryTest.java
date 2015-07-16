@@ -22,7 +22,7 @@ public class LibraryTest {
         BqSelect q = bq.select("alltabledata", "refs")
                 .useCache(true)
                 .withPageSize(1000)
-                .withPriority("INTERACTIVE")
+                .withPriority(BqSelect.PRIO_INTERACTIVE)
                 .build();
         q.getStatus();
         assert q.isCompleted();

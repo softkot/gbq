@@ -7,7 +7,7 @@ Use it in a next simple steps.
 ### Create SQL template resource file (sql.vm)
 
     #macro(alltabledata $table)
-    SELECT * FROM [${DATASET}.$table]
+    SELECT * FROM [${DATASET}.$table] $filter
     #end
 
 ### Create context object to connect BigQuery with specified credentials
@@ -19,16 +19,17 @@ Use it in a next simple steps.
                 .withTemplateLibrary("sql.vm")
                 .build();
 
-### Populate context with some template variables
+### Populate context with some global template variables
 
     context.put("DATASET", "v_0bd737781f004ffe9b7f6ebe5bc3991d");
     
-### Build template based query
+### Build template based query with local template variables and macro parameters
 
     BqSelect rows = context.select("alltabledata", "mytable")
                 .useCache(true)
                 .withPageSize(1000)
                 .withPriority("INTERACTIVE")
+                .put("filter","where myvalue > 10")
                 .build();
 
 ### Iterate paginated results (lazy loading)

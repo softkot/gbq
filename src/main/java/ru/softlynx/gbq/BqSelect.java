@@ -1,13 +1,21 @@
 package ru.softlynx.gbq;
 
+import com.google.api.client.util.Data;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.model.*;
+import org.apache.velocity.VelocityContext;
 
 import java.io.IOException;
+import java.io.StringWriter;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> {
+    public static final String PRIO_INTERACTIVE = "INTERACTIVE";
+    public static final String PRIO_BATCH = "BATCH";
+
     private final String jobid;
     private final Bigquery.Jobs.GetQueryResults query;
     private String pagetoken = null;
@@ -42,11 +50,80 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
 
     public class Row {
 
-        private TableRow row;
+        private final List<TableCell> cells;
+
 
         public Row(TableRow row) {
-            this.row = row;
+            this.cells = row.getF();
         }
+
+        public Object asObject(Integer idx) {
+            Object obj = cells.get(idx).getV();
+            return Data.isNull(obj) ? null : obj;
+        }
+
+        public Object asObject(String name) throws IOException {
+            return asObject(getColumnIndexes().get(name));
+        }
+
+        public String asString(Integer idx) {
+            Object obj = asObject(idx);
+            return obj == null ? null : obj.toString();
+        }
+
+        public String asString(String name) throws IOException {
+            Object obj = asObject(name);
+            return obj == null ? null : obj.toString();
+        }
+
+        public Long asLong(Integer idx) {
+            Object obj = asObject(idx);
+            return obj == null ? null : Long.parseLong(obj.toString());
+        }
+
+        public Long asLong(String name) throws IOException {
+            Object obj = asObject(name);
+            return obj == null ? null : Long.parseLong(obj.toString());
+        }
+
+        public Integer asInteger(Integer idx) {
+            Object obj = asObject(idx);
+            return obj == null ? null : Integer.parseInt(obj.toString());
+        }
+
+        public Integer asInteger(String name) throws IOException {
+            Object obj = asObject(name);
+            return obj == null ? null : Integer.parseInt(obj.toString());
+        }
+
+        public Double asDouble(Integer idx) {
+            Object obj = asObject(idx);
+            return obj == null ? null : Double.parseDouble(obj.toString());
+        }
+
+        public Double asDouble(String name) throws IOException {
+            Object obj = asObject(name);
+            return obj == null ? null : Double.parseDouble(obj.toString());
+        }
+
+        public Date asDate(Integer idx) {
+            Double d = asDouble(idx);
+            return d == null ? null : new Date((long) d.doubleValue());
+        }
+
+        public Date asDate(String name) throws IOException {
+            Double d = asDouble(name);
+            return d == null ? null : new Date((long) d.doubleValue());
+        }
+
+        public boolean isNull(Integer idx) {
+            return asObject(idx) == null;
+        }
+
+        public boolean isNull(String name) throws IOException {
+            return asObject(name) == null;
+        }
+
     }
 
     @Override
@@ -83,20 +160,20 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
     }
 
     public static class Builder {
-        public static final String PRIO_INTERACTIVE = "INTERACTIVE";
-        public static final String PRIO_BATCH = "BATCH";
 
-        private final String sql;
         private final BqContext context;
+        private final VelocityContext localvc;
         private String priority = PRIO_INTERACTIVE;
         private Boolean cache = true;
         private Long pageSize = 1000L;
         private String jobid;
+        private String macroName;
+        private Object[] params;
+        private String sql;
 
-        Builder(BqContext bqContext, String sql) {
+        Builder(BqContext bqContext) {
             this.context = bqContext;
-            this.sql = sql;
-
+            localvc = new VelocityContext(bqContext.vc);
         }
 
         public Builder useCache(Boolean cache) {
@@ -119,6 +196,11 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
             return this;
         }
 
+        public Builder put(String key, Object value) {
+            localvc.put(key, value);
+            return this;
+        }
+
 
         public BqSelect build() throws IOException {
             if (pageSize <= 0) {
@@ -129,7 +211,7 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
             JobConfigurationQuery queryConfig = new JobConfigurationQuery();
             queryConfig.setPriority(priority);
             queryConfig.setUseQueryCache(cache);
-            queryConfig.setQuery(sql);
+            queryConfig.setQuery(getSql());
             config.setQuery(queryConfig);
             job.setConfiguration(config);
             Bigquery.Jobs.Insert insert = context.BQ().jobs().insert(
@@ -141,8 +223,32 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
         }
 
         public String getSql() {
+            if (sql == null) {
+                StringWriter sw = new StringWriter();
+                localvc.put(macroName, params);
+                String[] paramNames = null;
+                if (params != null) {
+                    paramNames = new String[params.length];
+                    for (int i = 0; i < params.length; i++) {
+                        paramNames[i] = "${" + macroName + "[" + i + "]}";
+                    }
+                }
+                context.ve.invokeVelocimacro(macroName, macroName, paramNames, localvc, sw);
+                sql = sw.toString();
+            }
             return sql;
         }
+
+        Builder withTemplateMacro(String macroName) {
+            this.macroName = macroName;
+            return this;
+        }
+
+        Builder withParams(Object... params) {
+            this.params = params;
+            return this;
+        }
+
     }
 
     BqSelect(Builder builder) throws IOException {
