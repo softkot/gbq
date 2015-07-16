@@ -4,13 +4,13 @@
 
 Use it in a next simple steps.
 
-1. Create SQL template resource file(sql.vm)
+* Create SQL template resource file(sql.vm)
 ```
 #macro(alltabledata $table)
 SELECT * FROM [${DATASET}.$table] $filter
 #end
 ```
-2. Create context object to connect BigQuery with specified credentials
+* Create context object to connect BigQuery with specified credentials
 ```
 BqContext context = new BqContext.Builder()
             .withProjectId("my-big-query-project")
@@ -19,11 +19,11 @@ BqContext context = new BqContext.Builder()
             .withTemplateLibrary("sql.vm")
             .build();
 ```
-3. Populate context with some global template variables
+* Populate context with some global template variables
 ```
 context.put("DATASET", "v_0bd737781f004ffe9b7f6ebe5bc3991d");
 ```    
-4. Build template based query with local template variables and macro parameters
+* Build template based query with local template variables and macro parameters
 ```
 BqSelect rows = context.select("alltabledata", "mytable")
             .useCache(true)
@@ -32,7 +32,7 @@ BqSelect rows = context.select("alltabledata", "mytable")
             .put("filter","where myvalue > 10")
             .build();
 ```
-5. Iterate paginated results (lazy loading)
+* Iterate paginated results (lazy loading)
 ```
 for (BqSelect.Row row : rows) {
         if (row.asString("col1") != null) {
