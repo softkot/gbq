@@ -188,6 +188,18 @@ public class BqContext {
         }
     }
 
+    public Table getTableInfo(String datasetName, String tableName) {
+        try {
+            return bq.tables().get(
+                    PROJECT_ID(),
+                    datasetName,
+                    tableName)
+                    .execute();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
     public String createTable(String datasetName, String tableName, TableSchema schema) throws IOException {
         logger.log(Level.INFO, "Creating new namespace " + tableName);
         Table table = new Table();
