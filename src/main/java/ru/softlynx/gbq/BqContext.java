@@ -1,10 +1,12 @@
 package ru.softlynx.gbq;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.bigquery.Bigquery;
 import com.google.api.services.bigquery.BigqueryScopes;
+import com.google.api.services.bigquery.model.*;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeServices;
@@ -14,8 +16,6 @@ import org.apache.velocity.tools.generic.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
@@ -81,7 +81,7 @@ public class BqContext {
         private String serviceAccount;
         private URL keyURI;
         HashSet<String> libs = new HashSet<String>();
-        final VelocityContext vc=new VelocityContext();
+        final VelocityContext vc = new VelocityContext();
 
         public Builder() {
         }
@@ -116,7 +116,6 @@ public class BqContext {
     }
 
     BqContext(Builder builder) throws GeneralSecurityException, IOException, URISyntaxException {
-
         this.projectId = builder.projectId;
         final GoogleCredential credential = new GoogleCredential.Builder()
                 .setTransport(new NetHttpTransport())
@@ -151,7 +150,6 @@ public class BqContext {
         vc.put("number", new NumberTool());
         vc.put("parser", new ValueParser());
         vc.put("sorter", new SortTool());
-
     }
 
     Bigquery BQ() {
@@ -166,6 +164,52 @@ public class BqContext {
         return new BqSelect.Builder(this)
                 .withTemplateMacro(queryName)
                 .withParams(params);
+    }
+
+    public void createDataset(String datasetName, String description) throws IOException {
+        Dataset dataset = new Dataset();
+        DatasetReference datasetRef = new DatasetReference();
+        datasetRef.setProjectId(PROJECT_ID());
+        datasetRef.setDatasetId(datasetName);
+        dataset.setDatasetReference(datasetRef);
+        if (description != null) {
+            dataset.setFriendlyName(description);
+            dataset.setDescription(description);
+        }
+        try {
+            bq.datasets().insert(
+                    PROJECT_ID(),
+                    dataset
+            ).execute();
+        } catch (GoogleJsonResponseException ex) {
+            if (ex.getStatusCode() != 409) { //Dataset table exists
+                throw ex;
+            }
+        }
+    }
+
+    public String createTable(String datasetName, String tableName, TableSchema schema) throws IOException {
+        logger.log(Level.INFO, "Creating new namespace " + tableName);
+        Table table = new Table();
+        table.setSchema(schema);
+        TableReference tableRef = new TableReference();
+        tableRef.setDatasetId(datasetName);
+        tableRef.setProjectId(PROJECT_ID());
+        tableRef.setTableId(tableName);
+        table.setTableReference(tableRef);
+        Bigquery.Tables.Insert rq = bq.tables().insert(
+                PROJECT_ID(),
+                datasetName,
+                table);
+        try {
+            table = rq.execute();
+        } catch (GoogleJsonResponseException ex) {
+            if (ex.getStatusCode() != 409) { //Data table exists
+                throw ex;
+            }
+        }
+        logger.log(Level.INFO, "Table created " + table.getSelfLink());
+        return tableName;
     }
 
     public void with(String key, Object value) {
