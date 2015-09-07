@@ -166,6 +166,19 @@ public class BqContext {
                 .withParams(params);
     }
 
+    public TableDataInsertAllResponse insert(String dataset, String tablename, TableDataInsertAllRequest content)
+            throws IOException {
+        TableDataInsertAllResponse response = bq.tabledata()
+                .insertAll(PROJECT_ID(),
+                        dataset,
+                        tablename,
+                        content).execute();
+        if ((response.getInsertErrors() != null) && (!response.getInsertErrors().isEmpty())) {
+            throw new IOException(response.toPrettyString());
+        }
+        return response;
+    }
+
     public void createDataset(String datasetName, String description) throws IOException {
         Dataset dataset = new Dataset();
         DatasetReference datasetRef = new DatasetReference();
