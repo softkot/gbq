@@ -53,6 +53,10 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
         private final List<TableCell> cells;
 
 
+        public List<TableCell> getCells() {
+            return cells;
+        }
+
         public Row(TableRow row) {
             this.cells = row.getF();
         }
@@ -136,6 +140,9 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
             if (response != null) {
                 pagetoken = response.getPageToken();
                 rows = null;
+                if (pagetoken == null) {
+                    return false;
+                }
             }
         }
 
