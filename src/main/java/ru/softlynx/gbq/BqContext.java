@@ -166,6 +166,14 @@ public class BqContext {
                 .withParams(params);
     }
 
+    public BqSelect fromJobID(String jobid) throws IOException {
+        if ((jobid==null) || (jobid.isEmpty())) {
+            return null;
+        }
+        return new BqSelect(new BqSelect.Builder(this,jobid));
+    }
+
+
     public TableDataInsertAllResponse insert(String dataset, String tablename, TableDataInsertAllRequest content)
             throws IOException {
         TableDataInsertAllResponse response = bq.tabledata()

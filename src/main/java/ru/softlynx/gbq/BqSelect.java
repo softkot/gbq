@@ -183,6 +183,12 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
             localvc = new VelocityContext(bqContext.vc);
         }
 
+        Builder(BqContext bqContext, String jobid) {
+            this.context = bqContext;
+            localvc = new VelocityContext(bqContext.vc);
+            this.jobid = jobid;
+        }
+
         public Builder useCache(Boolean cache) {
             this.cache = cache;
             return this;
