@@ -7,8 +7,9 @@ repositories {
 dependencies {
     compile 'org.apache.velocity:velocity:1.7'
     compile 'org.apache.velocity:velocity-tools:2.0'
-    compile 'org.slf4j:slf4j-api:1.7.12'
-//    compile "com.fasterxml.jackson.core:jackson-databind:2.5.1"
-    compile 'com.google.apis:google-api-services-bigquery:v2-rev191-1.19.1'
+    compile "com.google.apis:google-api-services-bigquery:v2-rev230-1.20.0"
     testCompile 'junit:junit:4.12'
 }
+
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_7
