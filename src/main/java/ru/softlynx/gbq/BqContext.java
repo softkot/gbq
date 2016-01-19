@@ -13,6 +13,7 @@ import org.apache.velocity.runtime.RuntimeServices;
 import org.apache.velocity.runtime.log.LogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.tools.generic.*;
+import org.apache.velocity.tools.view.WebappResourceLoader;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,14 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class BqContext {
-    final VelocityContext vc;
-    final VelocityEngine ve;
-
-    final private String projectId;
-    final private Bigquery bq;
-
     public static String LOGGER_NAME = BqSelect.class.getSimpleName();
-
     static Logger logger = Logger.getLogger(LOGGER_NAME);
     static LogChute vlogger = new LogChute() {
         @Override
@@ -75,45 +69,11 @@ public class BqContext {
             return true;
         }
     };
+    final VelocityContext vc;
+    final VelocityEngine ve;
+    final private String projectId;
+    final private Bigquery bq;
 
-    public static class Builder {
-        String projectId;
-        private String serviceAccount;
-        private URL keyURI;
-        HashSet<String> libs = new HashSet<String>();
-        final VelocityContext vc = new VelocityContext();
-
-        public Builder() {
-        }
-
-        public Builder withProjectId(String projectId) {
-            this.projectId = projectId;
-            return this;
-        }
-
-        public Builder withServiceAccount(String serviceAccount) {
-            this.serviceAccount = serviceAccount;
-            return this;
-        }
-
-        public Builder withP12KeyURL(URL keyURI) {
-            this.keyURI = keyURI;
-            return this;
-        }
-
-        public Builder withTemplateLibrary(String... libs) {
-            this.libs.addAll(Arrays.asList(libs));
-            return this;
-        }
-
-        public void with(String key, Object value) {
-            vc.put(key, value);
-        }
-
-        public BqContext build() throws GeneralSecurityException, IOException, URISyntaxException {
-            return new BqContext(this);
-        }
-    }
 
     BqContext(Builder builder) throws GeneralSecurityException, IOException, URISyntaxException {
         this.projectId = builder.projectId;
@@ -134,11 +94,17 @@ public class BqContext {
                 .build();
 
         ve = new VelocityEngine();
+        if (builder.servletContext != null) {
+            ve.setApplicationAttribute("javax.servlet.ServletContext", builder.servletContext);
+        }
         //ve.setProperty(VelocityEngine.RUNTIME_LOG_LOGSYSTEM, vlogger);
         ve.setProperty(VelocityEngine.INPUT_ENCODING, "utf-8");
         ve.setProperty(VelocityEngine.OUTPUT_ENCODING, "utf-8");
-        ve.setProperty(VelocityEngine.RESOURCE_LOADER, "classpath");
+        ve.setProperty(VelocityEngine.RESOURCE_LOADER, "classpath,webapp");
         ve.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getCanonicalName());
+        ve.setProperty("classpath.resource.loader.path", "/");
+        ve.setProperty("webapp.resource.loader.class", WebappResourceLoader.class.getCanonicalName());
+        ve.setProperty("webapp.resource.loader.path", "/WEB-INF/");
         ve.init();
         for (String lib : builder.libs) {
             ve.getTemplate(lib);
@@ -167,12 +133,11 @@ public class BqContext {
     }
 
     public BqSelect fromJobID(String jobid) throws IOException {
-        if ((jobid==null) || (jobid.isEmpty())) {
+        if ((jobid == null) || (jobid.isEmpty())) {
             return null;
         }
-        return new BqSelect(new BqSelect.Builder(this,jobid));
+        return new BqSelect(new BqSelect.Builder(this, jobid));
     }
-
 
     public TableDataInsertAllResponse insert(String dataset, String tablename, TableDataInsertAllRequest content)
             throws IOException {
@@ -251,6 +216,52 @@ public class BqContext {
 
     public void without(String key) {
         vc.remove(key);
+    }
+
+    public static class Builder {
+        final VelocityContext vc = new VelocityContext();
+        String projectId;
+        HashSet<String> libs = new HashSet<String>();
+        private Object servletContext = null;
+        private String serviceAccount;
+        private URL keyURI;
+
+        public Builder() {
+        }
+
+        public Builder withProjectId(String projectId) {
+            this.projectId = projectId;
+            return this;
+        }
+
+        public Builder withServiceAccount(String serviceAccount) {
+            this.serviceAccount = serviceAccount;
+            return this;
+        }
+
+        public Builder withP12KeyURL(URL keyURI) {
+            this.keyURI = keyURI;
+            return this;
+        }
+
+        public Builder withTemplateLibrary(String... libs) {
+            this.libs.addAll(Arrays.asList(libs));
+            return this;
+        }
+
+        public Builder with(String key, Object value) {
+            vc.put(key, value);
+            return this;
+        }
+
+        public BqContext build() throws GeneralSecurityException, IOException, URISyntaxException {
+            return new BqContext(this);
+        }
+
+        public Builder withServletContext(Object servletContext) {
+            this.servletContext = servletContext;
+            return this;
+        }
     }
 
 

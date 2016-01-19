@@ -18,11 +18,21 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
 
     private final String jobid;
     private final Bigquery.Jobs.GetQueryResults query;
-    private String pagetoken = null;
     private final BqContext context;
-    private GetQueryResultsResponse response;
     Iterator<TableRow> rows = null;
     HashMap<String, Integer> columns = null;
+    private Builder builder = null;
+    private String pagetoken = null;
+    private GetQueryResultsResponse response;
+
+    BqSelect(Builder builder) throws IOException {
+        context = builder.context;
+        this.builder = builder;
+        this.jobid = builder.jobid;
+        query = context.BQ().jobs().getQueryResults(context.PROJECT_ID(), jobid);
+        query.setMaxResults(builder.pageSize);
+
+    }
 
     public GetQueryResultsResponse getResponse() throws IOException {
         if (response == null) {
@@ -34,7 +44,7 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
 
     public HashMap<String, Integer> getColumnIndexes() throws IOException {
         if (columns == null) {
-            columns = new HashMap<String, Integer>();
+            columns = new HashMap<>();
             int columnIndex = 0;
             for (TableFieldSchema s : getResponse().getSchema().getFields()) {
                 columns.put(s.getName(), columnIndex++);
@@ -48,86 +58,8 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
         return this;
     }
 
-    public class Row {
-
-        private final List<TableCell> cells;
-
-
-        public List<TableCell> getCells() {
-            return cells;
-        }
-
-        public Row(TableRow row) {
-            this.cells = row.getF();
-        }
-
-        public Object asObject(Integer idx) {
-            Object obj = cells.get(idx).getV();
-            return Data.isNull(obj) ? null : obj;
-        }
-
-        public Object asObject(String name) throws IOException {
-            return asObject(getColumnIndexes().get(name));
-        }
-
-        public String asString(Integer idx) {
-            Object obj = asObject(idx);
-            return obj == null ? null : obj.toString();
-        }
-
-        public String asString(String name) throws IOException {
-            Object obj = asObject(name);
-            return obj == null ? null : obj.toString();
-        }
-
-        public Long asLong(Integer idx) {
-            Object obj = asObject(idx);
-            return obj == null ? null : Long.parseLong(obj.toString());
-        }
-
-        public Long asLong(String name) throws IOException {
-            Object obj = asObject(name);
-            return obj == null ? null : Long.parseLong(obj.toString());
-        }
-
-        public Integer asInteger(Integer idx) {
-            Object obj = asObject(idx);
-            return obj == null ? null : Integer.parseInt(obj.toString());
-        }
-
-        public Integer asInteger(String name) throws IOException {
-            Object obj = asObject(name);
-            return obj == null ? null : Integer.parseInt(obj.toString());
-        }
-
-        public Double asDouble(Integer idx) {
-            Object obj = asObject(idx);
-            return obj == null ? null : Double.parseDouble(obj.toString());
-        }
-
-        public Double asDouble(String name) throws IOException {
-            Object obj = asObject(name);
-            return obj == null ? null : Double.parseDouble(obj.toString());
-        }
-
-        public Date asDate(Integer idx) {
-            Double d = asDouble(idx);
-            return d == null ? null : new Date((long) d.doubleValue());
-        }
-
-        public Date asDate(String name) throws IOException {
-            Double d = asDouble(name);
-            return d == null ? null : new Date((long) d.doubleValue());
-        }
-
-        public boolean isNull(Integer idx) {
-            return asObject(idx) == null;
-        }
-
-        public boolean isNull(String name) throws IOException {
-            return asObject(name) == null;
-        }
-
+    public String getSql() {
+        return builder.getSql();
     }
 
     @Override
@@ -164,6 +96,27 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
     @Override
     public Row next() {
         return (rows == null) ? null : new Row(rows.next());
+    }
+
+    public BqContext getContext() {
+        return context;
+    }
+
+    public Long getPageSize() {
+        return query.getMaxResults();
+    }
+
+    public String getJobid() {
+        return jobid;
+    }
+
+    public JobStatus getStatus() throws IOException {
+        Job pollJob = context.BQ().jobs().get(context.PROJECT_ID(), jobid).execute();
+        return pollJob.getStatus();
+    }
+
+    public boolean isCompleted() throws IOException {
+        return getStatus().getState().equals("DONE");
     }
 
     public static class Builder {
@@ -264,33 +217,89 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
 
     }
 
-    BqSelect(Builder builder) throws IOException {
-        context = builder.context;
-        this.jobid = builder.jobid;
-        query = context.BQ().jobs().getQueryResults(context.PROJECT_ID(), jobid);
-        query.setMaxResults(builder.pageSize);
+    public class Row {
 
-    }
+        private final List<TableCell> cells;
 
-    public BqContext getContext() {
-        return context;
-    }
 
-    public Long getPageSize() {
-        return query.getMaxResults();
-    }
+        public Row(TableRow row) {
+            this.cells = row.getF();
+        }
 
-    public String getJobid() {
-        return jobid;
-    }
+        public List<TableCell> getCells() {
+            return cells;
+        }
 
-    public JobStatus getStatus() throws IOException {
-        Job pollJob = context.BQ().jobs().get(context.PROJECT_ID(), jobid).execute();
-        return pollJob.getStatus();
-    }
+        public Object asObject(Integer idx) {
+            Object obj = cells.get(idx).getV();
+            return Data.isNull(obj) ? null : obj;
+        }
 
-    public boolean isCompleted() throws IOException {
-        return getStatus().getState().equals("DONE");
+        public Object asObject(String name) throws IOException {
+            return asObject(getColumnIndexes().get(name));
+        }
+
+        public String asString(Integer idx) {
+            Object obj = asObject(idx);
+            return obj == null ? null : obj.toString();
+        }
+
+        public String asString(String name) throws IOException {
+            Object obj = asObject(name);
+            return obj == null ? null : obj.toString();
+        }
+
+        public Long asLong(Integer idx) {
+            Object obj = asObject(idx);
+            return obj == null ? null : Long.parseLong(obj.toString());
+        }
+
+        public Long asLong(String name) throws IOException {
+            Object obj = asObject(name);
+            return obj == null ? null : Long.parseLong(obj.toString());
+        }
+
+        public Integer asInteger(Integer idx) {
+            Object obj = asObject(idx);
+            return obj == null ? null : Integer.parseInt(obj.toString());
+        }
+
+        public Integer asInteger(String name) throws IOException {
+            Object obj = asObject(name);
+            return obj == null ? null : Integer.parseInt(obj.toString());
+        }
+
+        public Double asDouble(Integer idx) {
+            Object obj = asObject(idx);
+            return obj == null ? null : Double.parseDouble(obj.toString());
+        }
+
+        public Double asDouble(String name) throws IOException {
+            Object obj = asObject(name);
+            return obj == null ? null : Double.parseDouble(obj.toString());
+        }
+
+        public Date asDate(Integer idx) {
+            Double d = asDouble(idx);
+            return d == null ? null : new Date((long) d.doubleValue());
+        }
+
+        public Date asDate(String name) throws IOException {
+            Double d = asDouble(name);
+            return d == null ? null : new Date((long) d.doubleValue());
+        }
+
+        public boolean isNull(Integer idx) {
+            return asObject(idx) == null;
+        }
+
+        public boolean isNull(String name) throws IOException {
+            return asObject(name) == null;
+        }
+
+        public boolean hasColumn(String name) throws IOException {
+            return getColumnIndexes().containsKey(name);
+        }
     }
 
 }
