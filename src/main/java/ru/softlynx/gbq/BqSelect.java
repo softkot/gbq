@@ -231,6 +231,9 @@ public class BqSelect implements Iterator<BqSelect.Row>, Iterable<BqSelect.Row> 
         }
 
         public Object asObject(Integer idx) {
+            if (idx == null) {
+                return null;
+            }
             Object obj = cells.get(idx).getV();
             return Data.isNull(obj) ? null : obj;
         }
